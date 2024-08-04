@@ -1,0 +1,23 @@
+
+
+.progress-bar {
+    height: 5px;
+
+    background-color: #2a2a2b;
+
+    position: relative;
+
+    border-radius: 8px;
+}
+
+.progress-bar > div {
+    position: absolute;
+
+    left: 0;
+
+    height: 100%;
+
+    background-color: white;
+
+    z-index: 2;
+}

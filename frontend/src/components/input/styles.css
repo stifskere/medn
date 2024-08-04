@@ -1,0 +1,14 @@
+
+.input-box {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 10px;
+
+    width: 100%;
+}
+
+.input-box > label {
+    font-size: 1em;
+}

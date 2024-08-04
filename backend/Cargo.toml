@@ -1,0 +1,30 @@
+[package]
+name = "medn-backend"
+version = "1.0.0"
+edition = "2021"
+
+[dependencies]
+actix-web = "4.8.0"
+dotenvy = "0.15.7"
+sqlx = { version = "0.8.0", features = ["mysql", "runtime-tokio", "chrono", "bigdecimal"] }
+tokio = { version = "1.39.1", features = ["full", "macros"] }
+serde = { version = "1.0.204", features = ["derive"] }
+serde_json = "1.0.120"
+bcrypt = "0.15.1"
+rand = "0.8.5"
+base64 = "0.22.1"
+num-traits = "0.2.19"
+cron-job = "0.2.0"
+regex = "1.10.5"
+chrono = "0.4.38"
+sysinfo = "0.31.2"
+whoami = "1.5.1"
+
+[build-dependencies]
+fs_extra = "1.2"
+
+[target.'cfg(windows)'.build-dependencies]
+check_elevation = "0.2.4"
+
+[target.'cfg(unix)'.build-dependencies]
+is_sudo = "0.0.1"

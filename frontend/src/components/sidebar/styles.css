@@ -1,0 +1,135 @@
+
+.sidebar {
+    width: 310px;
+    height: 85vh;
+
+    border-right: 1px solid #252525;
+
+    display: flex;
+    position: relative;
+
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 10vh 0;
+}
+
+.sidebar-nav {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 10px;
+
+    width: 80%;
+
+}
+
+.logo-sidebar {
+    left: 50%;
+
+    transform: translateX(-50%);
+}
+
+.sidebar-search {
+    position: relative;
+
+    padding-bottom: 20px;
+}
+
+.sidebar-search > input {
+    height: 30px;
+}
+
+.sidebar-search > svg {
+    position: absolute;
+
+    top: 25%;
+    left: 92%;
+
+    transform: translate(-50%, -25%);
+
+    cursor: pointer;
+}
+
+.sidebar-button {
+    display: flex;
+
+    justify-content: flex-start;
+    align-items: center;
+
+    gap: 20px;
+
+    height: 50px;
+
+    padding: 0 20px;
+
+    border-radius: 8px;
+
+    transition: background-color 0.2s;
+}
+
+.sidebar-button > * {
+    text-decoration: none;
+}
+
+.sidebar-button > svg {
+    font-size: 1.2em;
+}
+
+.sidebar-button:hover,
+.sidebar-button[data-current="true"]{
+    background-color: #19191a;
+}
+
+.sidebar-profile {
+    width: 80%;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 20px;
+}
+
+.exit-button {
+    transition: color 0.2s, background-color 0.2s, stroke 0.2s;
+
+    cursor: pointer;
+}
+
+.exit-button:hover > * {
+    color: red;
+
+    stroke: red;
+}
+
+.sidebar-profile-data {
+    background-color: #19191a;
+
+    border-radius: 8px;
+
+    padding: 10px 10px;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 10px;
+
+    border: 1px solid #252525;
+}
+
+.sidebar-profile-data > p:first-child {
+    display: flex;
+
+    align-items: center;
+
+    gap: 5px;
+}
+
+.sidebar-profile-data > p:last-child {
+    font-size: 0.8em;
+
+    color: #5b5b61;
+}

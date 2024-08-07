@@ -1,3 +1,4 @@
+import { SyntheticEvent } from "react";
 
 
 export function formatBytes(bytes: number): string {
@@ -10,5 +11,12 @@ export function formatBytes(bytes: number): string {
         i++;
     }
 
-    return `${bytes.toFixed(2)}${units[i]}`;
+    return `${Number.isInteger(bytes) ? bytes : bytes.toFixed(2)}${units[i]}`;
+}
+
+export function updateStateOnInput<T extends string>(setter: ((_: T) => void)): 
+((_: SyntheticEvent<HTMLInputElement>) => void) {
+    return (event: SyntheticEvent<HTMLInputElement>): void => {
+        setter(<T>event.currentTarget.value);
+    };
 }

@@ -1,8 +1,8 @@
 use sqlx::query;
-use crate::utils::database::get_connection;
+use crate::utils::database::get_db_connection;
 
 pub async fn clear_expired_sessions() {
-    let db_connection = get_connection().await;
+    let db_connection = get_db_connection().await;
     
     let result = query!("DELETE FROM sessions WHERE expires_at < NOW()")
         .execute(&db_connection)

@@ -5,7 +5,7 @@ use crate::utils::config::MednConfig;
 
 static CONNECTION: OnceLock<Pool<MySql>> = OnceLock::new();
 
-pub async fn get_connection() -> Pool<MySql> {
+pub async fn get_db_connection() -> Pool<MySql> {
     if let Some(connection) = CONNECTION.get() {
         return connection
             .clone();

@@ -1,13 +1,13 @@
 use actix_web::{get, HttpRequest, HttpResponse, post, Responder};
 use actix_web::cookie::Cookie;
 use actix_web::web::Form;
-use bcrypt::verify;
+use bcrypt::{hash, verify, DEFAULT_COST};
 use serde::Deserialize;
 use sqlx::{Error, query};
 use crate::require_user;
-use crate::utils::database::get_connection;
+use crate::utils::database::get_db_connection;
 use crate::utils::responses::ResponseWrapper;
-use crate::utils::tokens::get_session_token;
+use crate::utils::tokens::{create_api_key, create_session_token};
 
 
 #[derive(Deserialize)]
@@ -18,7 +18,7 @@ struct UserLogin {
 
 #[post("/login")]
 pub async fn login(req: Form<UserLogin>) -> impl Responder {
-    let db_connection = get_connection().await;
+    let db_connection = get_db_connection().await;
 
     let email = req.email.clone();
     let password = req.password.clone();
@@ -47,7 +47,7 @@ pub async fn login(req: Form<UserLogin>) -> impl Responder {
                     );
                 }
                 
-                let token = get_session_token();
+                let token = create_session_token();
                 
                 let session = query!(
                     "INSERT INTO sessions(user_id, token) VALUE(?, ?)",
@@ -63,9 +63,13 @@ pub async fn login(req: Form<UserLogin>) -> impl Responder {
                             HttpResponse::Ok(),
                             None::<String>
                         );
-                        
-                        response.add_cookie(&Cookie::new("medn-session", token)).ok();
-                        
+
+                        let mut cookie = Cookie::new("medn-session", token);
+
+                        cookie.set_path("/");
+
+                        response.add_cookie(&cookie).ok();
+
                         response
                     },
                     Err(_) => ResponseWrapper::<String>::server_error()
@@ -98,9 +102,36 @@ pub async fn logout(req: HttpRequest) -> impl Responder {
         let _ = response.add_removal_cookie(&cookie);
 
         let _ = query!("DELETE FROM sessions WHERE token = ?", cookie.value())
-            .execute(&get_connection().await)
+            .execute(&get_db_connection().await)
             .await;
     }
 
     response
+}
+
+#[get("/api-key")]
+pub async fn reset_api_key(req: HttpRequest) -> impl Responder {
+    let user = require_user!(req);
+    let token = create_api_key();
+
+    let Ok(hashed_token) = hash(&token, DEFAULT_COST)
+    else { return ResponseWrapper::server_error(); };
+
+    let result = query!(
+        "UPDATE users SET api_key = ? WHERE id = ?",
+        hashed_token,
+        user.id
+    )
+    .execute(&get_db_connection().await)
+    .await;
+
+    match result {
+        Err(_) => ResponseWrapper::server_error(),
+        Ok(_) => {
+            ResponseWrapper::success_response(
+                HttpResponse::Ok(),
+                token
+            )
+        }
+    }
 }

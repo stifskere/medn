@@ -5,5 +5,7 @@ CREATE TABLE users(
     name VARCHAR(255) NOT NULL,
     password VARCHAR(255) NOT NULL,
     api_key VARCHAR(255) NOT NULL,
-    max_storage BIGINT DEFAULT NULL
+    max_storage BIGINT DEFAULT NULL,
+    ui_language VARCHAR(10) DEFAULT NULL,
+    upload_path VARCHAR(255) NOT NULL DEFAULT ""
 );

@@ -1,15 +1,18 @@
 use std::fs::{read, read_dir, read_to_string};
 use std::path::PathBuf;
-use actix_web::{get, HttpResponse, Responder};
-use serde::Serialize;
+use actix_web::web::Form;
+use actix_web::{get, post, HttpRequest, HttpResponse, Responder};
+use serde::{Deserialize, Serialize};
+use sqlx::query;
+use crate::require_user;
 use crate::utils::config::MednConfig;
+use crate::utils::database::get_db_connection;
 use crate::utils::paths::get_path_on_current;
 use crate::utils::responses::ResponseWrapper;
 
 #[derive(Serialize)]
 struct ConfigStruct {
-    name: String,
-    language: String
+    name: String
 }
 
 #[get("/logo")]
@@ -33,11 +36,32 @@ pub async fn get_data() -> impl Responder {
         HttpResponse::Ok(),
         ConfigStruct {
             name: MednConfig::get_from_db::<String>("ui.name").await
-                .unwrap_or("MEDN".to_string()),
-            language: MednConfig::get_from_db::<String>("ui.language").await
-                .unwrap_or("EN".to_string())
+                .unwrap_or("MEDN".to_string())
         }
     )
+}
+
+#[derive(Deserialize)]
+struct SetUploadPath {
+    upload_path: String
+}
+
+#[post("/user/upload_path")]
+pub async fn post_upload_path(req: HttpRequest, input: Form<SetUploadPath>) -> impl Responder {
+    let user = require_user!(req);
+
+    let update = query!(
+        "UPDATE users SET upload_path = ? WHERE id = ?",
+        &input.upload_path,
+        &user.id
+    )
+        .execute(&get_db_connection().await)
+        .await;
+
+    match update {
+        Ok(_)=> ResponseWrapper::success_response(HttpResponse::Ok(), ""),
+        Err(_) => ResponseWrapper::server_error(), 
+    }
 }
 
 #[get("/theme")]
@@ -59,7 +83,6 @@ pub async fn get_current_theme() -> impl Responder {
             Ok(entry) => entry,
             Err(_) => return ResponseWrapper::server_error(),
         };
-
         if config_entry.is_some()
             && entry.file_name().to_string_lossy()
             == config_entry.clone().unwrap()

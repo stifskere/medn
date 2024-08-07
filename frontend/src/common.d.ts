@@ -7,4 +7,8 @@ interface ApiResponse<T> {
     result: T | undefined
 }
 
+interface AppConfig {
+    name: string;
+}
+
 type BaseProps<TChildren> = React.DetailedHTMLProps<React.HTMLAttributes<TChildren>, TChildren>;

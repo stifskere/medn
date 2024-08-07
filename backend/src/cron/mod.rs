@@ -1,1 +1,2 @@
-pub mod clear_expired_sessions;
+mod clear_expired_sessions;
+pub mod register_cron;

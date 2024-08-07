@@ -1,0 +1,104 @@
+
+.settings-wrapper {
+    height: 80vh;
+    width: 50vw;
+
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+
+    gap: 50px;
+
+    inset: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.settings-wrapper > div {
+    display: flex;
+    flex-direction: column;
+
+    justify-content: flex-start;
+    align-items: flex-start;
+
+    width: 100%;
+
+    gap: 30px;
+}
+
+.setting-title {
+    font-weight: bold;
+}
+
+.setting-title > span {
+    font-weight: normal;
+
+    color: #72727a;
+}
+
+.api-key-container {
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+
+    gap: 15px;
+}
+
+.api-key-container > div {
+    display: flex;
+
+    justify-content: space-between;
+
+    gap: 30px;
+}
+
+.api-key-container > div > div {
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    gap: 15px;
+}
+
+.api-route-container {
+    display: flex;
+    flex-direction: column;
+
+    gap: 15px;
+
+    width: 100%;
+}
+
+.api-route-container > div {
+    display: flex;
+
+    justify-content: space-between;
+    align-items: center;
+}
+
+.password-container {
+    display: flex;
+    flex-direction: column;
+
+    gap: 15px;
+
+    width: 100%;
+}
+
+.password-container > div {
+    display: flex;
+
+    justify-content: space-between;
+
+    gap: 50px;
+}
+
+.password-container > div > div {
+    display: flex;
+    flex-direction: column;
+
+    flex: 1;
+
+    gap: 10px;
+}

@@ -1,9 +1,11 @@
 use actix_web::{HttpRequest, HttpResponse, Responder};
+use bcrypt::verify;
+use chrono::Utc;
 use num_traits::ToPrimitive;
 use serde::Serialize;
 use sqlx::{Error, query};
 use crate::utils::authorization::SessionResponse::{Authorized, Unauthorized};
-use crate::utils::database::get_connection;
+use crate::utils::database::get_db_connection;
 use crate::utils::responses::ResponseWrapper;
 
 use super::config::MednConfig;
@@ -16,7 +18,10 @@ pub struct User {
     pub email: String,
     pub name: String,
     pub max_storage: Option<u64>,
-    used_storage: Option<u64>
+    used_storage: Option<u64>,
+    pub ui_language: String,
+    pub upload_path: String,
+    pub expires_in: Option<i64>
 }
 
 impl User {
@@ -31,19 +36,30 @@ pub enum SessionResponse<T> where T: Responder {
 }
 
 pub async fn get_user(req: &HttpRequest) -> SessionResponse<HttpResponse> {
-    let db_connection = get_connection().await;
+    let db_connection = get_db_connection().await;
 
     let api_key = req.headers().get("X-MEDN-AUTH");
     let mut retrieved_user: User;
 
+    let default_language = MednConfig::get_from_db::<String>("ui.default_language")
+        .await
+        .unwrap_or("EN".to_string());
+
     if let Some(api_key) = api_key {
-        let user = query!(
-            "SELECT id, email, name, max_storage FROM users WHERE api_key = ?",
-            api_key.to_str().ok()
-        )
-            .fetch_one(&db_connection)
-            .await;
-        
+        let user = query!("SELECT * FROM users")
+            .fetch_all(&db_connection)
+            .await
+            .map(|res| {
+                res.into_iter()
+                    .find_map(|user| {
+                        verify(api_key.to_str().unwrap(), &user.api_key)
+                            .map(|valid| if valid { Some(user) } else { None })
+                            .unwrap_or(None)
+                    })
+                    .ok_or(sqlx::Error::RowNotFound)
+            })
+            .unwrap_or_else(Err);
+
         if let Ok(user) = user {
             retrieved_user = User {
                 id: user.id,
@@ -51,7 +67,10 @@ pub async fn get_user(req: &HttpRequest) -> SessionResponse<HttpResponse> {
                 name: user.name,
                 max_storage: user.max_storage
                     .map(|ms| ms as u64),
-                used_storage: None
+                used_storage: None,
+                ui_language: user.ui_language.unwrap_or(default_language),
+                upload_path: user.upload_path,
+                expires_in: None
             };
         } else {
             return match user {
@@ -66,14 +85,14 @@ pub async fn get_user(req: &HttpRequest) -> SessionResponse<HttpResponse> {
         }
     } else if let Some(cookie) = req.cookie("medn-session") {
         let user = query!(
-            r#"SELECT users.id, users.email, users.name, users.max_storage
+            r#"SELECT users.*, sessions.expires_at
             FROM sessions JOIN users ON sessions.user_id = users.id
             WHERE sessions.token = ? AND sessions.expires_at > NOW()"#,
             cookie.value()
         )
             .fetch_one(&db_connection)
             .await;
-        
+
         if let Ok(user) = user {
             retrieved_user = User {
                 id: user.id,
@@ -81,7 +100,10 @@ pub async fn get_user(req: &HttpRequest) -> SessionResponse<HttpResponse> {
                 name: user.name,
                 max_storage: user.max_storage
                     .map(|ms| ms as u64),
-                used_storage: None
+                used_storage: None,
+                ui_language: user.ui_language.unwrap_or(default_language),
+                upload_path: user.upload_path,
+                expires_in: Some(user.expires_at.signed_duration_since(Utc::now()).num_seconds())
             }
         } else {
             return match user {
@@ -148,8 +170,8 @@ macro_rules! require_user {
             $crate::utils::authorization::SessionResponse::Authorized(user) => user,
             $crate::utils::authorization::SessionResponse::Unauthorized(mut error) => {
                 if let Some(cookie) = &$x.cookie("medn-session") {
-                    let connection = $crate::utils::database::get_connection().await;
-                    let _ = query!("DELETE FROM sessions WHERE token = ?", cookie.value())
+                    let connection = $crate::utils::database::get_db_connection().await;
+                    let _ = sqlx::query!("DELETE FROM sessions WHERE token = ?", cookie.value())
                         .execute(&connection)
                         .await;
                     let _ = &error.add_removal_cookie(&cookie);

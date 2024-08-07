@@ -1,12 +1,14 @@
 
 .sidebar {
+    inset: 0 0;
+
     width: 310px;
     height: 85vh;
 
     border-right: 1px solid #252525;
 
     display: flex;
-    position: relative;
+    position: absolute;
 
     flex-direction: column;
 
@@ -69,6 +71,8 @@
     border-radius: 8px;
 
     transition: background-color 0.2s;
+
+    cursor: pointer;
 }
 
 .sidebar-button > * {
@@ -131,5 +135,12 @@
 .sidebar-profile-data > p:last-child {
     font-size: 0.8em;
 
-    color: #5b5b61;
+    color: #72727a;
+}
+
+.sidebar-profile > div:last-child {
+    display: flex;
+    flex-direction: column;
+
+    gap: 5px;
 }

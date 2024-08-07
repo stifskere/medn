@@ -50,8 +50,8 @@ html, body, #root {
     transition: border 0.3s;
 }
 
-.input:hover:not(.input-error),
-.input:focus:not(.input-error) {
+.input:hover:not(.input-error):not(:read-only),
+.input:focus:not(.input-error):not(:read-only) {
     border: 1px solid #c9c9c9;
 }
 
@@ -71,6 +71,14 @@ html, body, #root {
 
     transition: border 0.3s;
 
+    cursor: not-allowed;
+}
+
+.button:disabled {
+    filter: brightness(70%);
+}
+
+.button:not(:disabled) {
     cursor: pointer;
 }
 
@@ -80,6 +88,25 @@ html, body, #root {
     font-size: 0.9em;
 }
 
-.button:hover {
+
+.warning-text {
+    color: #ffdf00;
+
+    font-size: 0.9em;
+}
+
+.button:hover:not(:disabled) {
     border: 1px solid #c9c9c9;
+}
+
+.button.warning-button:hover:not(:disabled) {
+    border: 1px solid #ffdf00;
+
+    color: #ffdf00;
+}
+
+.button.error-button:hover:not(:disabled) {
+    border: 1px solid red;
+
+    color: red;
 }

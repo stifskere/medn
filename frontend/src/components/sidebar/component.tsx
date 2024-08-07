@@ -1,9 +1,8 @@
 import {ChangeEvent, ReactElement} from "react";
-
 import { 
     LuFolder, 
     LuFolderSymlink, 
-    LuFolderSync,
+    LuSettings,
     LuPowerOff,
     LuSearch,
     LuUser
@@ -30,9 +29,17 @@ interface SideBarProps {
 }
 
 function PageLink({text, icon, href}: PageLinkProps): ReactElement {
-    return <div className="sidebar-button" data-current={(location.pathname === href).toString()}>
+    function onClick(): void {
+        location.href = href;
+    }
+
+    return <div 
+        className="sidebar-button" 
+        data-current={(location.pathname === href).toString()}
+        onClick={onClick}
+    >
         {icon}
-        <a href={href}>{text}</a>
+        <p>{text}</p>
     </div>;
 }
 
@@ -57,7 +64,6 @@ export default function SideBar({user, onSearch}: SideBarProps): ReactElement {
                 </div>
                 <PageLink text="Personal" icon={<LuFolder />} href="/personal"/>
                 <PageLink text="Shared with me" icon={<LuFolderSymlink />} href="/shared"/>
-                <PageLink text="External uploads" icon={<LuFolderSync />} href="/api-settings"/>
             </div>
             <div className="sidebar-profile">
                 <div className="sidebar-profile-data">
@@ -67,9 +73,12 @@ export default function SideBar({user, onSearch}: SideBarProps): ReactElement {
                         Used {formatBytes(user.used_storage)} out of {formatBytes(user.max_storage)} available
                     </p>
                 </div>
-                <div className="sidebar-button exit-button" onClick={logOut}>
-                    <LuPowerOff />
-                    <p>Log Out</p>
+                <div>
+                    <PageLink text="Settings" icon={<LuSettings />} href="/settings"/>
+                    <div className="sidebar-button exit-button" onClick={logOut}>
+                        <LuPowerOff />
+                        <p>Log Out</p>
+                    </div>
                 </div>
             </div>
         </aside>

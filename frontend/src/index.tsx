@@ -15,14 +15,15 @@ import Personal from "@pages/personal/page";
 
 import "react-toastify/dist/ReactToastify.css";
 import Shared from "@pages/shared/page";
-import ApiSettings from "@pages/api_settings/page";
+import Settings from "@pages/settings/page";
 
-interface AppConfig {
-    name: string;
-    language: string;
-}
+function App(): ReactElement { 
+    let themeCheck: FetchResponse = useFetch("/api/config/theme");
+    let config: FetchResponse = useFetch("/api/config/data");
+    let parsedConfig: ApiResponse<AppConfig> | undefined = config.code == 200 
+        ? JSON.parse(config.body!) 
+        : undefined;
 
-function App(): ReactElement {
     let route: SelectedRoute = useRoute({
         routes: [
             {
@@ -45,16 +46,16 @@ function App(): ReactElement {
                 handler: <Shared />
             },
             {
-                path: "/api-settings",
+                path: "/settings",
                 title: "External upload settings",
-                handler: <ApiSettings />
+                handler: <Settings />
             }
         ],
         not_found: <NotFound />
     })
 
-    let themeCheck: FetchResponse = useFetch("/api/config/theme");
-    let config: FetchResponse = useFetch("/api/config/data");
+    if (parsedConfig !== undefined)
+        document.title = `${parsedConfig.result!.name} - ${route.title}`;
 
     if (!themeCheck.has_reply || !config.has_reply)
         return <></>
@@ -73,12 +74,6 @@ function App(): ReactElement {
         theme.rel = "stylesheet";
         theme.href = "/api/config/theme";
         document.head.appendChild(theme);
-    }
-
-    if (config.code == 200) {
-        let parsedConfig: ApiResponse<AppConfig> = JSON.parse(config.body!);
-
-        document.title = `${parsedConfig.result!.name} - ${route.title}`;
     }
 
     return <>

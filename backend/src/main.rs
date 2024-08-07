@@ -1,20 +1,19 @@
-use crate::cron::clear_expired_sessions::clear_expired_sessions;
 use crate::routes::auth::{login, profile, logout};
 use crate::routes::config::{get_current_theme, get_data, get_logo};
 use crate::utils::config::MednConfig;
-use crate::utils::database::get_connection;
+use crate::utils::database::get_db_connection;
 use actix_web::cookie::time::UtcOffset;
 use actix_web::web::scope;
 use actix_web::{main, App, HttpServer};
-use cron_job::CronJob;
+use cron::register_cron::register_crons;
 use dotenvy::from_filename;
 use regex::Regex;
+use routes::auth::reset_api_key;
+use routes::config::post_upload_path;
 use sqlx::query;
 use std::env::var;
 use std::io::Result;
 use std::string::ToString;
-use std::thread::{sleep, spawn};
-use std::time::Duration;
 
 mod cron;
 mod routes;
@@ -30,7 +29,7 @@ async fn main() -> Result<()> {
 
     MednConfig::fill();
 
-    let db_connection = get_connection().await;
+    let db_connection = get_db_connection().await;
 
     let set_time_zone = query!(
         "SET time_zone = ?",
@@ -51,15 +50,9 @@ async fn main() -> Result<()> {
         eprintln!("There was an error on setting timezone: {error}\nUsing system default.");
     }
 
-    spawn(|| {
-        let mut cron = CronJob::default();
-        cron.new_job("0 0 * * * *", || drop(clear_expired_sessions()));
-        let _ = cron.start();
-
-        loop {
-            sleep(Duration::from_secs(1));
-        }
-    });
+    if let Err(err) = register_crons().await {
+        eprintln!("There was an error while registering crons: {err}");
+    }
 
     HttpServer::new(move || {
         App::new().service(
@@ -69,12 +62,14 @@ async fn main() -> Result<()> {
                         .service(login)
                         .service(profile)
                         .service(logout)
+                        .service(reset_api_key)
                 )
                 .service(
                     scope("/config")
                         .service(get_logo)
                         .service(get_current_theme)
-                        .service(get_data),
+                        .service(get_data)
+                        .service(post_upload_path)
                 ),
         )
     })

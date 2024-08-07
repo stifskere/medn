@@ -6,6 +6,9 @@ export interface User {
     admin: boolean;
     max_storage: number;
     used_storage: number;
+    ui_language: string;
+    upload_path: string;
+    expires_in: number;
 }
 
 export default function useUser(redirect: boolean): User | undefined | null {
@@ -18,13 +21,18 @@ export default function useUser(redirect: boolean): User | undefined | null {
         const parsedBody: ApiResponse<never> 
             = <ApiResponse<never>>JSON.parse(result.body!);
 
-        console.log(parsedBody.reason);
-
         if (redirect)
-            location.assign(`/login?error=${encodeURIComponent(parsedBody.reason!)}`);
+            location.href = `/login?error=${encodeURIComponent(parsedBody.reason!)}`;
+
         return null;
     }
 
-    return (<ApiResponse<User>>JSON.parse(result.body!))
+    const user: User = (<ApiResponse<User>>JSON.parse(result.body!))
         .result!;
+
+    setTimeout((): void => {
+        location.href = "/login";
+    }, (user.expires_in + 3) * 1000);
+
+    return user;
 }

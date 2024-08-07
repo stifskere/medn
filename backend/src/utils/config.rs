@@ -6,7 +6,7 @@ use std::str::FromStr;
 use std::sync::OnceLock;
 use sqlx::query;
 use whoami::username;
-use crate::utils::database::get_connection;
+use crate::utils::database::get_db_connection;
 
 #[derive(Debug)]
 pub struct MednConfig {
@@ -15,6 +15,10 @@ pub struct MednConfig {
     pub mysql_password: Option<String>,
     pub mysql_database: String
 }
+
+// storage.path | The path where the files are supposed to be stored.
+// ui.name | The UI display name for titles...
+// ui.language | The UI language file.
 
 static CONFIG_INSTANCE: OnceLock<MednConfig> = OnceLock::new();
 
@@ -38,7 +42,7 @@ impl MednConfig {
     
     pub async fn get_from_db<TResult>(namespace: impl ToString)
     -> Option<TResult> where TResult: FromStr {
-        let connection = get_connection().await;
+        let connection = get_db_connection().await;
         
         let query = query!(
             "SELECT value FROM configuration WHERE LOWER(name) = LOWER(?)",
@@ -60,7 +64,7 @@ impl MednConfig {
     }
     
     pub async fn set_on_db(namespace: impl ToString, value: impl ToString) -> bool {
-        let connection = get_connection().await;
+        let connection = get_db_connection().await;
         
         query!(
             "REPLACE INTO configuration(name, value) VALUE(?, ?)",

@@ -1,13 +1,13 @@
 use actix_web::{get, post, HttpRequest, HttpResponse, Responder};
 use actix_web::cookie::Cookie;
 use actix_web::web::Form;
-use bcrypt::{hash, verify, DEFAULT_COST};
+use bcrypt::verify;
 use serde::Deserialize;
 use sqlx::{Error, query};
 use crate::require_user;
 use crate::utils::database::get_db_connection;
 use crate::utils::responses::ResponseWrapper;
-use crate::utils::tokens::{create_api_key, create_session_token};
+use crate::utils::tokens::create_session_token;
 
 
 #[derive(Deserialize)]
@@ -81,14 +81,6 @@ pub async fn login(req: Form<UserLogin>) -> impl Responder {
     }
 }
 
-#[get("/profile")]
-pub async fn profile(req: HttpRequest) -> impl Responder {
-    ResponseWrapper::success_response(
-        HttpResponse::Ok(),
-        require_user!(req)
-    )
-}
-
 #[get("/logout")]
 pub async fn logout(req: HttpRequest) -> impl Responder {
     let _ = require_user!(req);
@@ -107,31 +99,4 @@ pub async fn logout(req: HttpRequest) -> impl Responder {
     }
 
     response
-}
-
-#[get("/api-key")]
-pub async fn reset_api_key(req: HttpRequest) -> impl Responder {
-    let user = require_user!(req);
-    let token = create_api_key();
-
-    let Ok(hashed_token) = hash(&token, DEFAULT_COST)
-    else { return ResponseWrapper::server_error(); };
-
-    let result = query!(
-        "UPDATE users SET api_key = ? WHERE id = ?",
-        hashed_token,
-        user.id
-    )
-    .execute(&get_db_connection().await)
-    .await;
-
-    match result {
-        Err(_) => ResponseWrapper::server_error(),
-        Ok(_) => {
-            ResponseWrapper::success_response(
-                HttpResponse::Ok(),
-                token
-            )
-        }
-    }
 }

@@ -15,7 +15,7 @@ import Settings from "@pages/settings/page";
 
 import { AppServices } from "./utils";
 
-import { LuAccessibility, LuXCircle } from "react-icons/lu";
+import { LuXCircle } from "react-icons/lu";
 
 function App(): ReactElement { 
     let themeCheck: FetchResponse = useFetch("/api/config/theme");

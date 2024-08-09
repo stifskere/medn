@@ -12,6 +12,13 @@ use super::config::MednConfig;
 use super::storage::get_path_storage;
 
 #[derive(Serialize)]
+pub struct Session {
+    #[serde(skip)]
+    pub token: String,
+    pub expires_in_seconds: i64
+}
+
+#[derive(Serialize)]
 pub struct User {
     #[serde(skip)]
     pub id: i32,
@@ -21,7 +28,7 @@ pub struct User {
     used_storage: Option<u64>,
     pub ui_language: String,
     pub upload_path: String,
-    pub expires_in: Option<i64>
+    pub session: Option<Session>
 }
 
 impl User {
@@ -70,7 +77,7 @@ pub async fn get_user(req: &HttpRequest) -> SessionResponse<HttpResponse> {
                 used_storage: None,
                 ui_language: user.ui_language.unwrap_or(default_language),
                 upload_path: user.upload_path,
-                expires_in: None
+                session: None
             };
         } else {
             return match user {
@@ -85,7 +92,7 @@ pub async fn get_user(req: &HttpRequest) -> SessionResponse<HttpResponse> {
         }
     } else if let Some(cookie) = req.cookie("medn-session") {
         let user = query!(
-            r#"SELECT users.*, sessions.expires_at
+            r#"SELECT users.*, sessions.expires_at, sessions.token
             FROM sessions JOIN users ON sessions.user_id = users.id
             WHERE sessions.token = ? AND sessions.expires_at > NOW()"#,
             cookie.value()
@@ -103,7 +110,10 @@ pub async fn get_user(req: &HttpRequest) -> SessionResponse<HttpResponse> {
                 used_storage: None,
                 ui_language: user.ui_language.unwrap_or(default_language),
                 upload_path: user.upload_path,
-                expires_in: Some(user.expires_at.signed_duration_since(Utc::now()).num_seconds())
+                session: Some(Session {
+                    expires_in_seconds: user.expires_at.signed_duration_since(Utc::now()).num_seconds(),
+                    token: user.token
+                })
             }
         } else {
             return match user {

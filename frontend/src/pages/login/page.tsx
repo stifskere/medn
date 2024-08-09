@@ -1,6 +1,6 @@
 import {ReactElement, useEffect, useState} from "react";
 
-import useUser, {User} from "@hooks/use_user";
+import useUser from "@hooks/use_user";
 
 import Input from "@components/input/component";
 
@@ -12,11 +12,6 @@ export default function Login(): ReactElement {
         = useState<string | undefined>();
     const [emptyInputs, setEmptyInputs]: State<string[]>
         = useState<string[]>([]);
-
-    if (possibleUser) {
-        location.assign("/personal");
-        return <></>;
-    }
 
     useEffect((): (() => void) => {
         const form: HTMLFormElement
@@ -57,6 +52,11 @@ export default function Login(): ReactElement {
         form.addEventListener("submit", submitForm);
         return (): void => form.removeEventListener("submit", submitForm);
     }, []);
+
+    if (possibleUser) {
+        location.assign("/personal");
+        return <></>;
+    }
 
     return <>
         <img className="logo" src="/api/config/logo" alt="logo"/>

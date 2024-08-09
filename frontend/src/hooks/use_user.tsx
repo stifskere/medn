@@ -1,35 +1,50 @@
 import useFetch, {FetchResponse} from "@hooks/use_fetch";
 import { AppServices, Services } from "../utils";
 
-import { useContext, useEffect, useMemo } from "react";
+import { MutableRefObject, useContext, useEffect, useMemo, useRef } from "react";
 import { LuUnplug } from "react-icons/lu";
-
-export interface User {
-    email: string;
-    name: string;
-    admin: boolean;
-    max_storage: number;
-    used_storage: number;
-    ui_language: string;
-    upload_path: string;
-    expires_in: number;
-}
 
 export default function useUser(redirect: boolean): User | undefined | null {
     const { queueNotification }: Services = useContext(AppServices);
-    const result: FetchResponse = useFetch("/api/auth/profile");
-
+    const result: FetchResponse = useFetch("/api/session/profile");
+    const movedMouse: MutableRefObject<boolean> = useRef<boolean>(true);
     const user = useMemo((): User | undefined =>
-        !result.has_reply || result.code != 200 
+        !result.has_reply || result.code != 200
             ? undefined 
             : (JSON.parse(result.body!) as ApiResponse<User>).result!
     , [result]);
+
+    useEffect((): (() => void) => {
+        const unsetMoved: NodeJS.Timeout = setInterval((): void => {
+            movedMouse.current = false;
+        }, 200000);
+
+        function setMoved(): void {
+            movedMouse.current = true;
+        }
+
+        document.addEventListener("mousemove", setMoved);
+
+        return (): void => {
+            document.removeEventListener("mousemove", setMoved);
+            clearInterval(unsetMoved);
+        };
+    }, []);
 
     useEffect((): (() => void) | void => {
         if (user === undefined)
             return;
 
-        let timeout: NodeJS.Timeout = setTimeout((): void => {
+        let timeout: NodeJS.Timeout = setTimeout(async (): Promise<void> => {
+            if (movedMouse.current) {
+                const timeRequest = await fetch("/api/session/request-time");
+
+                if (timeRequest.ok) {
+                    result.refresh();
+                    return;
+                }
+            }
+
             queueNotification({
                 time: 10000,
                 title: "Session expiration",
@@ -40,7 +55,7 @@ export default function useUser(redirect: boolean): User | undefined | null {
             setTimeout((): void => {
                 location.href = "/login"
             }, 63000);
-        }, (user.expires_in - 60) * 1000);
+        }, (user.session.expires_in_seconds - 60) * 1000);
 
         return (): void => { clearTimeout(timeout); };
     }, [result]);

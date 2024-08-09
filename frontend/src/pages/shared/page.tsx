@@ -1,5 +1,5 @@
 import SideBar from "@components/sidebar/component";
-import useUser, { User } from "@hooks/use_user";
+import useUser from "@hooks/use_user";
 import { ReactElement } from "react";
 
 

@@ -8,8 +8,6 @@ import {
     LuUser
 } from "react-icons/lu";
 
-import {User} from "@hooks/use_user";
-
 import ProgressBar from "@components/progress/component";
 
 import { formatBytes } from "../../utils";
@@ -23,8 +21,7 @@ interface PageLinkProps {
     href: string;
 }
 
-interface SideBarProps {
-    user: User;
+interface SideBarProps extends RequiresUser {
     onSearch?(input: string): void;
 }
 

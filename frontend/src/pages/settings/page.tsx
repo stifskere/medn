@@ -1,6 +1,6 @@
 import { MutableRefObject, ReactElement, useContext, useEffect, useRef, useState } from "react";
 
-import useUser, { User } from "@hooks/use_user";
+import useUser from "@hooks/use_user";
 
 import SideBar from "@components/sidebar/component";
 
@@ -10,35 +10,13 @@ import { updateStateOnInput, AppServices, Services } from "../../utils";
 
 import { LuCheck } from "react-icons/lu";
 
-interface ApiRouteError {
-    content: string;
-    type: "error" | "warning";
-}
-
-interface PasswordError {
-    password?: string;
-    repeat?: string;
-}
-
-export default function Settings(): ReactElement {
-    const user: null | undefined | User = useUser(true);
-    const { queueNotification }: Services = useContext(AppServices);
-
+function ApiKeyContainer(): ReactElement {
     const [apiKeyWarning, setApiKeyWarning]: State<boolean> = useState<boolean>(false);
     const [apiKey, setApiKey]: State<string | undefined | null>
         = useState<string | undefined | null>();
 
-    const serverApiRoute: MutableRefObject<undefined | string> = useRef<undefined | string>();
-    const [apiRoute, setApiRoute]: State<string> = useState<string>("");
-    const [apiRouteError, setApiRouteError]: State<ApiRouteError | undefined> 
-        = useState<ApiRouteError | undefined>();
-
-    const [password, setPassword]: State<string> = useState<string>("");
-    const [repeatPassword, setRepeatPassword]: State<string> = useState<string>("");
-    const [passwordError, setPasswordError]: State<PasswordError> = useState<PasswordError>({});
-
     async function resetApiKey(): Promise<void> {
-        const result = await fetch("/api/auth/api-key");
+        const result = await fetch("/api/session/api-key");
 
         if (!result.ok) {
             setApiKey(null);
@@ -48,6 +26,51 @@ export default function Settings(): ReactElement {
         setApiKey((await result.json() as ApiResponse<string>).result);
         setApiKeyWarning(false);
     }
+
+    return <div className="api-key-container">
+        <p className="setting-title">API KEY <span>| To see your API key you must reset it.</span></p>
+        <input className="input" value={apiKey || "********************************"} readOnly/>
+        {
+            apiKeyWarning
+                ? <div>
+                    <p className="warning-text">
+                        This is a potentially destructive action,
+                        if you reset your API key, any workflow attached
+                        to it might stop working, are you sure you want to
+                        continue?
+                    </p>
+                    <div>
+                        <button className="button warning-button" onClick={resetApiKey}>Yes</button>
+                        <button className="button" onClick={(): void => setApiKeyWarning(false)}>No</button>
+                    </div>
+                </div>
+                : <div>
+                    <p className={apiKey ? "warning-text" : "error-text"}>
+                        {
+                            apiKey === null
+                                ? "There was an error while resetting the API key."
+                                : apiKey && "Make sure to copy your API key, as you will only be able to see it once."
+                        }
+                    </p>
+                    <div>
+                        <button className="button" onClick={(): void => setApiKeyWarning(true)}>Reset key</button>
+                    </div>
+                </div>
+        }
+    </div>;
+}
+
+interface ApiRouteError {
+    content: string;
+    type: "error" | "warning";
+}
+
+function ApiRouteContainer({user}: RequiresUser): ReactElement {
+    const { queueNotification } = useContext(AppServices);
+    const serverApiRoute: MutableRefObject<undefined | string> = useRef<undefined | string>();
+    const [apiRoute, setApiRoute]: State<string> = useState<string>("");
+    const [apiRouteError, setApiRouteError]: State<ApiRouteError | undefined> 
+        = useState<ApiRouteError | undefined>();
 
     useEffect((): void => {
         if (user)
@@ -114,22 +137,6 @@ export default function Settings(): ReactElement {
             });
     }, [apiRoute]);
 
-    useEffect((): void => {
-        let passError: string | undefined = undefined; 
-        let repeatError: string | undefined = undefined;
-
-        if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{6,}$/.test(password) && password.length !== 0)
-            passError = "The password doesn't match the rules.";
-
-        if (password !== repeatPassword && password.length !== 0)
-            repeatError = "Passwords do not match.";
-
-        setPasswordError({
-            password: passError,
-            repeat: repeatError
-        });
-    }, [password, repeatPassword]);
-
     async function updateApiPath(): Promise<void> {
         const updateResult: Response = await fetch("/api/config/user/upload_path", {
             method: "POST",
@@ -157,6 +164,59 @@ export default function Settings(): ReactElement {
         }
     }
 
+    return <div className="api-route-container">
+        <p className="setting-title">DEFAULT UPLOAD PATH <span>
+            | Configure the default path for your API uploads.</span>
+        </p>
+        <input 
+            className={`input ${apiRouteError?.type === "error" ? "input-error" : ""}`} 
+            placeholder="API uploads route" 
+            onInput={updateStateOnInput(setApiRoute)} value={apiRoute}
+        />
+        <div>
+            <p className={`${apiRouteError?.type || "error"}-text`}>{apiRouteError?.content || ""}</p>
+            <button
+                className="button" 
+                disabled={
+                    ((apiRouteError?.content.length ?? 0) !== 0 && apiRouteError?.type === "error")
+                    || apiRoute === serverApiRoute.current
+                }
+                onClick={updateApiPath}
+            >
+                Save
+            </button>
+        </div>
+    </div>;
+}
+
+interface PasswordError {
+    password?: string;
+    repeat?: string;
+}
+
+export default function Settings(): ReactElement {
+    const user: null | undefined | User = useUser(true);
+
+    const [password, setPassword]: State<string> = useState<string>("");
+    const [repeatPassword, setRepeatPassword]: State<string> = useState<string>("");
+    const [passwordError, setPasswordError]: State<PasswordError> = useState<PasswordError>({});
+
+    useEffect((): void => {
+        let passError: string | undefined = undefined; 
+        let repeatError: string | undefined = undefined;
+
+        if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{6,}$/.test(password) && password.length !== 0)
+            passError = "The password doesn't match the rules.";
+
+        if (password !== repeatPassword && password.length !== 0)
+            repeatError = "Passwords do not match.";
+
+        setPasswordError({
+            password: passError,
+            repeat: repeatError
+        });
+    }, [password, repeatPassword]);
+
     if (user === null || user === undefined)
         return <></>;
 
@@ -165,60 +225,8 @@ export default function Settings(): ReactElement {
         <div className="settings-wrapper">
             <div>
                 <h1>API Settings</h1>
-                <div className="api-key-container">
-                    <p className="setting-title">API KEY <span>| To see your API key you must reset it.</span></p>
-                    <input className="input" value={apiKey || "********************************"} readOnly/>
-                    {
-                        apiKeyWarning
-                        ? <div>
-                            <p className="warning-text">
-                                This is a potentially destructive action,
-                                if you reset your API key, any workflow attached
-                                to it might stop working, are you sure you want to
-                                continue?
-                            </p>
-                            <div>
-                                <button className="button warning-button" onClick={resetApiKey}>Yes</button>
-                                <button className="button" onClick={(): void => setApiKeyWarning(false)}>No</button>
-                            </div>
-                        </div>
-                        : <div>
-                            <p className={apiKey ? "warning-text" : "error-text"}>
-                              {
-                                  apiKey === null
-                                      ? "There was an error while resetting the API key."
-                                      : apiKey && "Make sure to copy your API key, as you will only be able to see it once."
-                              }
-                            </p>
-                            <div>
-                                <button className="button" onClick={(): void => setApiKeyWarning(true)}>Reset key</button>
-                            </div>
-                        </div>
-                    }
-                </div>
-                <div className="api-route-container">
-                    <p className="setting-title">DEFAULT UPLOAD PATH <span>
-                        | Configure the default path for your API uploads.</span>
-                    </p>
-                    <input 
-                        className={`input ${apiRouteError?.type === "error" ? "input-error" : ""}`} 
-                        placeholder="API uploads route" 
-                        onInput={updateStateOnInput(setApiRoute)} value={apiRoute}
-                    />
-                    <div>
-                        <p className={`${apiRouteError?.type || "error"}-text`}>{apiRouteError?.content || ""}</p>
-                        <button
-                            className="button" 
-                            disabled={
-                                ((apiRouteError?.content.length ?? 0) !== 0 && apiRouteError?.type === "error")
-                                || apiRoute === serverApiRoute.current
-                            }
-                            onClick={updateApiPath}
-                        >
-                            Save
-                        </button>
-                    </div>
-                </div>
+                <ApiKeyContainer />
+                <ApiRouteContainer user={user} />
             </div>
             <div>
                 <h1>User Settings</h1>

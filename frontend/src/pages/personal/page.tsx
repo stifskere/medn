@@ -1,6 +1,6 @@
 import {ReactElement} from "react";
 
-import useUser, {User} from "@hooks/use_user";
+import useUser from "@hooks/use_user";
 
 import SideBar from "@components/sidebar/component";
 

@@ -1,15 +1,15 @@
-use crate::routes::auth::{login, profile, logout};
-use crate::routes::config::{get_current_theme, get_data, get_logo};
+use crate::routes::auth::{login, logout};
+use crate::routes::config::{get_current_theme, get_data, get_logo, post_upload_path};
 use crate::utils::config::MednConfig;
 use crate::utils::database::get_db_connection;
+use crate::routes::session::{profile, reset_api_key};
 use actix_web::cookie::time::UtcOffset;
 use actix_web::web::scope;
 use actix_web::{main, App, HttpServer};
 use cron::register_cron::register_crons;
 use dotenvy::from_filename;
 use regex::Regex;
-use routes::auth::reset_api_key;
-use routes::config::post_upload_path;
+use routes::session::request_session_time;
 use sqlx::query;
 use std::env::var;
 use std::io::Result;
@@ -63,6 +63,12 @@ async fn main() -> Result<()> {
                         .service(profile)
                         .service(logout)
                         .service(reset_api_key)
+                )
+                .service(
+                    scope("/session")
+                        .service(profile)
+                        .service(reset_api_key)
+                        .service(request_session_time)
                 )
                 .service(
                     scope("/config")

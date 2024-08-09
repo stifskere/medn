@@ -1,11 +1,14 @@
-import { ReactElement, SyntheticEvent, useEffect, useState } from "react";
+import { MutableRefObject, ReactElement, useContext, useEffect, useRef, useState } from "react";
 
 import useUser, { User } from "@hooks/use_user";
 
 import SideBar from "@components/sidebar/component";
 
 import "./styles.css";
-import { updateStateOnInput } from "../../utils";
+
+import { updateStateOnInput, AppServices, Services } from "../../utils";
+
+import { LuCheck } from "react-icons/lu";
 
 interface ApiRouteError {
     content: string;
@@ -19,11 +22,13 @@ interface PasswordError {
 
 export default function Settings(): ReactElement {
     const user: null | undefined | User = useUser(true);
+    const { queueNotification }: Services = useContext(AppServices);
 
     const [apiKeyWarning, setApiKeyWarning]: State<boolean> = useState<boolean>(false);
     const [apiKey, setApiKey]: State<string | undefined | null>
         = useState<string | undefined | null>();
 
+    const serverApiRoute: MutableRefObject<undefined | string> = useRef<undefined | string>();
     const [apiRoute, setApiRoute]: State<string> = useState<string>("");
     const [apiRouteError, setApiRouteError]: State<ApiRouteError | undefined> 
         = useState<ApiRouteError | undefined>();
@@ -46,7 +51,7 @@ export default function Settings(): ReactElement {
 
     useEffect((): void => {
         if (user)
-            setApiRoute(user.upload_path);
+            setApiRoute(serverApiRoute.current = user.upload_path);
     }, [user]);
 
     useEffect((): void => {
@@ -66,7 +71,7 @@ export default function Settings(): ReactElement {
             return stack.length == 0;
         }
 
-        let validVariables: string[] = ["unix_s", "unix_ms", "format"];
+        let validVariables: string[] = ["unix_s", "unix_ms", "format", "username", "email", "filename"];
 
         setApiRouteError(undefined);
 
@@ -107,8 +112,6 @@ export default function Settings(): ReactElement {
                 content: "By default the upload route is /{unix_s}.{format}, check out the documentation for more information.",
                 type: "warning"
             });
-
-
     }, [apiRoute]);
 
     useEffect((): void => {
@@ -128,7 +131,7 @@ export default function Settings(): ReactElement {
     }, [password, repeatPassword]);
 
     async function updateApiPath(): Promise<void> {
-        await fetch("/api/config/user/upload_path", {
+        const updateResult: Response = await fetch("/api/config/user/upload_path", {
             method: "POST",
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded"
@@ -136,6 +139,22 @@ export default function Settings(): ReactElement {
             body: `upload_path=${encodeURIComponent(apiRoute)}`,
             credentials: "same-origin"
         });
+
+        if (updateResult.ok) {
+            serverApiRoute.current = apiRoute;
+
+            queueNotification({
+                title: "Success",
+                content: "The API upload path was updated.",
+                icon: <LuCheck />,
+                time: 3000
+            });
+        } else {
+            setApiRouteError({
+                content: "A server error ocurred.",
+                type: "error"
+            });
+        }
     }
 
     if (user === null || user === undefined)
@@ -178,8 +197,8 @@ export default function Settings(): ReactElement {
                     }
                 </div>
                 <div className="api-route-container">
-                    <p className="setting-title">UPLOAD PATH <span>
-                        | Configure the path for your API uploads.</span>
+                    <p className="setting-title">DEFAULT UPLOAD PATH <span>
+                        | Configure the default path for your API uploads.</span>
                     </p>
                     <input 
                         className={`input ${apiRouteError?.type === "error" ? "input-error" : ""}`} 
@@ -190,7 +209,10 @@ export default function Settings(): ReactElement {
                         <p className={`${apiRouteError?.type || "error"}-text`}>{apiRouteError?.content || ""}</p>
                         <button
                             className="button" 
-                            disabled={(apiRouteError?.content.length ?? 0) !== 0 && apiRouteError?.type === "error"}
+                            disabled={
+                                ((apiRouteError?.content.length ?? 0) !== 0 && apiRouteError?.type === "error")
+                                || apiRoute === serverApiRoute.current
+                            }
                             onClick={updateApiPath}
                         >
                             Save

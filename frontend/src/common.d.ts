@@ -1,5 +1,5 @@
 
-type State<T> = [T, (value: T) => void];
+type State<T> = [T, (value: T | ((prev: T) => T)) => void];
 
 interface ApiResponse<T> {
     is_error: boolean;

@@ -1,8 +1,7 @@
-import { SyntheticEvent } from "react";
-
+import { createContext, SyntheticEvent } from "react";
+import { Notification } from "@hooks/use_notifications";
 
 export function formatBytes(bytes: number): string {
-    // doubt google is using this any time.
     const units: string[] = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     let i: number = 0;
 
@@ -17,6 +16,14 @@ export function formatBytes(bytes: number): string {
 export function updateStateOnInput<T extends string>(setter: ((_: T) => void)): 
 ((_: SyntheticEvent<HTMLInputElement>) => void) {
     return (event: SyntheticEvent<HTMLInputElement>): void => {
-        setter(<T>event.currentTarget.value);
+        setter(<T>(event.target as HTMLInputElement).value);
     };
 }
+
+export interface Services {
+    queueNotification(_: Notification): void;
+}
+
+export const AppServices = createContext<Services>({
+    queueNotification(_: Notification): void {}
+});

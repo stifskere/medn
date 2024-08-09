@@ -1,5 +1,4 @@
 
-
 .progress-bar {
     height: 5px;
 
@@ -20,4 +19,6 @@
     background-color: white;
 
     z-index: 2;
+
+    transition: width 0.2s;
 }

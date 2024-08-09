@@ -1,4 +1,4 @@
-use actix_web::{get, HttpRequest, HttpResponse, post, Responder};
+use actix_web::{get, post, HttpRequest, HttpResponse, Responder};
 use actix_web::cookie::Cookie;
 use actix_web::web::Form;
 use bcrypt::{hash, verify, DEFAULT_COST};
@@ -46,9 +46,9 @@ pub async fn login(req: Form<UserLogin>) -> impl Responder {
                         "INCORRECT_PASSWORD"
                     );
                 }
-                
+
                 let token = create_session_token();
-                
+
                 let session = query!(
                     "INSERT INTO sessions(user_id, token) VALUE(?, ?)",
                     record.id,
@@ -61,7 +61,7 @@ pub async fn login(req: Form<UserLogin>) -> impl Responder {
                     Ok(_) => {
                         let mut response = ResponseWrapper::success_response(
                             HttpResponse::Ok(),
-                            None::<String>
+                            None::<i8>
                         );
 
                         let mut cookie = Cookie::new("medn-session", token);
@@ -72,7 +72,7 @@ pub async fn login(req: Form<UserLogin>) -> impl Responder {
 
                         response
                     },
-                    Err(_) => ResponseWrapper::<String>::server_error()
+                    Err(_) => ResponseWrapper::server_error()
                 }
             } else {
                 ResponseWrapper::server_error()

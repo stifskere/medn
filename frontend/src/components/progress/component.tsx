@@ -9,6 +9,6 @@ interface ProgressBarProps extends BaseProps<HTMLDivElement> {
 
 export default function ProgressBar({current, max, className, ...props}: ProgressBarProps): ReactElement {
     return <div className={`progress-bar ${className || ""}`} {...props}>
-        <div style={{ width: `${((current / max) % 100)}%` }} />
+        <div style={{ width: `${((current / max) % 100) * 100}%` }} />
     </div>;
 }
